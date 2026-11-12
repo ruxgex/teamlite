@@ -3,8 +3,8 @@
 A fast, native Microsoft Teams **chat** client for Linux, written in Rust and drawn with
 [Rune](https://github.com/anomalyco/rune) (GPU UI, no browser engine in the main window).
 
-Built for personal use as a lighter alternative to the Teams PWA. Calls and meetings are not
-supported — open those in the browser.
+Built for personal use as a lighter alternative to the Teams PWA. Calls and meetings run in an
+optional call window (Teams on the web in embedded Chromium) that only starts when you need it.
 
 ## Features
 
@@ -23,13 +23,12 @@ supported — open those in the browser.
 - Edit and delete your own messages (delete asks for a second click), copy any message
 - Channel reply threads: open a post's replies and answer in the thread
 - Presence dots and status for 1:1 chats; others see "typing…" while you write
-- **Call / Video** (1:1) and **Open in Teams** buttons hand calls, meetings and files to Teams on
-  the web through its public deep links
+- **Call / Video** (1:1) and **Open in Teams** buttons open calls, meetings and files in the
+  [call window](#call-window) (or Teams on the web in your browser if it isn't installed)
 - Instant start: chat list and recent messages cached locally
 - Keyboard: `Ctrl+K` search, `Alt+↑/↓` previous/next chat, `Esc` closes menus, cancels edit/reply
 
-Not native: calls and meetings (the header buttons open them in Teams on the web),
-and *seeing* others type (that needs Trouter, Teams' websocket, which isn't implemented).
+Not native: calls and meetings (they run in Teams on the web, inside the call window), and *seeing* others type (that needs Trouter, Teams' websocket, which isn't implemented).
 
 ## How it works
 
@@ -60,6 +59,33 @@ Teamlite doesn't use it; Trouter (the web client's websocket) isn't implemented 
 
 If your organisation blocks the Teams desktop client id, set `TEAMLITE_CLIENT_ID` and
 `TEAMLITE_REDIRECT_URI`.
+
+## Call window
+
+Calls, video, screen sharing and meetings use `teamlite-call`: a separate binary that shows
+Teams on the web in embedded Chromium ([CEF](https://github.com/chromiumembedded/cef) through
+[cef-rs](https://github.com/tauri-apps/cef-rs)). The chat client never links Chromium; Teamlite
+starts the call window only when you press Call, Video or Open in Teams.
+
+```sh
+packaging/install-calls.sh      # downloads CEF once, builds, installs to ~/.local/lib/teamlite/
+```
+
+- About 370 MB installed (CEF itself is cached in `~/.local/share/cef`).
+- Sign in to Teams once in the call window; the profile lives in `~/.local/share/teamlite/calls`.
+- Camera, microphone, screen sharing and notifications are granted to Teams' own origins
+  without prompts; other sites get Chromium's normal prompts. Screen sharing on Wayland goes
+  through the desktop portal (PipeWire).
+- One process: opening another call while the window is open adds a window to it.
+- The deep-link "open in the app?" page is skipped automatically where possible.
+- Teamlite looks for `teamlite-call` in `$TEAMLITE_CALL_BIN`, next to `teamlite`, then
+  `~/.local/lib/teamlite/`; without it, links open in the browser as before.
+- Incoming calls don't ring in Teamlite yet (that needs Trouter). Keep a call window open on
+  the Teams home page to receive them.
+
+Building it by hand: `CEF_PATH=~/.local/share/cef cargo build --release --features cef-calls`
+(run the install script once first: it works around cef-rs's CEF downloader failing on CEF's
+now >10 MB build index).
 
 ## Build
 

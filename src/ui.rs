@@ -308,7 +308,7 @@ fn sign_in(s: &App, k: &Kit) -> El {
                 .h(40.0)
                 .press_scale(0.97),
         )
-        .child(text("Chats only. Calls and meetings open in Teams on the web.").font(caption()).color(k.c.text_faint).pt(6.0));
+        .child(text(if crate::call::available() { "Calls and meetings open in a Teams window." } else { "Chats only. Calls and meetings open in Teams on the web." }).font(caption()).color(k.c.text_faint).pt(6.0));
     if let Some(e) = &s.login_error {
         card = card.child(text(e.clone()).key("login-error").font(ts(12.5, 500.0)).color(danger()).wrap().max_w(340.0));
     }
@@ -736,23 +736,25 @@ fn swap_in() -> Transition {
         .springs(SpringPair::new(Spring::new(0.16, 0.0), Spring::NONE))
 }
 
-/// Calls, meetings and anything else Teamlite doesn't draw itself open in Teams on the web.
+/// Calls, meetings and anything else Teamlite doesn't draw itself open in the Teams call window
+/// (`teamlite-call`), or in Teams on the web when that isn't installed.
 fn header_actions(s: &App, k: &Kit) -> El {
+    let web_only = !crate::call::available();
     let mut r = row().gap(10.0).items_center();
     if s.call_link(false).is_some() {
         r = r.child(
             row().gap(2.0).padding(3.0).radius(10.0).fill(Color::WHITE.alpha(0.05)).border(1.0, stroke()).items_center()
-                .child(icon_button("call", &CALL_ICON, "Audio call in Teams on the web", k.c.text_base).hover(Color::WHITE.alpha(0.08))
-                    .on_press_tx(|s: &mut App, tx| { if let Some(u) = s.call_link(false) { s.open_link(&u, tx); } }))
+                .child(icon_button("call", &CALL_ICON, if web_only { "Audio call in Teams on the web" } else { "Audio call" }, k.c.text_base).hover(Color::WHITE.alpha(0.08))
+                    .on_press_tx(|s: &mut App, tx| { if let Some(u) = s.call_link(false) { s.open_teams(&u, tx); } }))
                 .child(el().w(1.0).h(16.0).fill(stroke()))
-                .child(icon_button("video", &VIDEO_ICON, "Video call in Teams on the web", k.c.text_base).hover(Color::WHITE.alpha(0.08))
-                    .on_press_tx(|s: &mut App, tx| { if let Some(u) = s.call_link(true) { s.open_link(&u, tx); } })),
+                .child(icon_button("video", &VIDEO_ICON, if web_only { "Video call in Teams on the web" } else { "Video call" }, k.c.text_base).hover(Color::WHITE.alpha(0.08))
+                    .on_press_tx(|s: &mut App, tx| { if let Some(u) = s.call_link(true) { s.open_teams(&u, tx); } })),
         );
     }
     // Solid brand fill, no gradient.
-    r.child(icon_button("open-web", &OPEN_EXTERNAL_ICON, "Open in Teams on the web", Color::WHITE)
+    r.child(icon_button("open-web", &OPEN_EXTERNAL_ICON, if web_only { "Open in Teams on the web" } else { "Open in Teams (calls & meetings)" }, Color::WHITE)
         .size(38.0, 38.0).radius(10.0).fill(hex("#5b5fc7")).hover(hex("#6c71d8"))
-        .on_press_tx(|s: &mut App, tx| { if let Some(u) = s.web_link() { s.open_link(&u, tx); } }))
+        .on_press_tx(|s: &mut App, tx| { if let Some(u) = s.web_link() { s.open_teams(&u, tx); } }))
 }
 
 /// Flyout above the account button, in Acrylic like Windows 11 flyouts.

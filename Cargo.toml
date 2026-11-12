@@ -23,10 +23,22 @@ imagesize = "0.13"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 wry = { version = "0.53", optional = true }
 tao = { version = "0.34", optional = true }
+# Call window (separate `teamlite-call` binary, so the chat client never links libcef).
+cef = { version = "156.4", optional = true, default-features = false }
 
 [features]
 default = ["webview-login"]
 webview-login = ["dep:wry", "dep:tao"]
+cef-calls = ["dep:cef"]
+
+[[bin]]
+name = "teamlite"
+path = "src/main.rs"
+
+[[bin]]
+name = "teamlite-call"
+path = "src/bin/teamlite-call.rs"
+required-features = ["cef-calls"]
 
 [patch.crates-io]
 wgpu-hal = { git = "https://github.com/anomalyco/rune", rev = "50d5c6db1ed6c310101a7fda6aa058df33959590" }

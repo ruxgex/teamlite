@@ -2,6 +2,7 @@
 
 mod api;
 mod app;
+mod call;
 mod demo;
 mod e2e;
 mod login;

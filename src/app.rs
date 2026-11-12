@@ -598,6 +598,15 @@ impl App {
         let _ = tx.open_url(url);
     }
 
+    /// Teams web links (calls, meetings, chats): Teamlite's call window when it's installed,
+    /// otherwise the browser.
+    pub fn open_teams(&mut self, url: &str, tx: &mut Tx) {
+        self.last_opened = Some(url.to_string());
+        if !crate::call::open(url) {
+            let _ = tx.open_url(url);
+        }
+    }
+
     /// Called as the composer changes: tells the chat someone is typing (throttled).
     pub fn typed(&mut self) {
         if self.editing.is_some() || self.composer.text.trim().is_empty() || self.clock - self.typing_sent < 3.0 {
