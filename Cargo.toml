@@ -1,0 +1,43 @@
+[package]
+name = "teamlite"
+version = "0.1.0"
+edition = "2024"
+description = "A light, native, Linux-first Microsoft Teams chat client"
+license = "MIT"
+
+[dependencies]
+rune = { git = "https://github.com/anomalyco/rune", rev = "50d5c6db1ed6c310101a7fda6aa058df33959590", features = ["native-file-dialog"] }
+rune-kit = { git = "https://github.com/anomalyco/rune", rev = "50d5c6db1ed6c310101a7fda6aa058df33959590" }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls", "gzip"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+sha2 = "0.10"
+rand = "0.8"
+url = "2"
+uuid = { version = "1", features = ["v4"] }
+dirs = "5"
+html-escape = "0.2"
+anyhow = "1"
+imagesize = "0.13"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+wry = { version = "0.53", optional = true }
+tao = { version = "0.34", optional = true }
+
+[features]
+default = ["webview-login"]
+webview-login = ["dep:wry", "dep:tao"]
+
+[patch.crates-io]
+wgpu-hal = { git = "https://github.com/anomalyco/rune", rev = "50d5c6db1ed6c310101a7fda6aa058df33959590" }
+winit = { git = "https://github.com/anomalyco/rune", rev = "50d5c6db1ed6c310101a7fda6aa058df33959590" }
+parley_engine = { git = "https://github.com/anomalyco/rune", rev = "50d5c6db1ed6c310101a7fda6aa058df33959590" }
+accesskit_windows = { git = "https://github.com/anomalyco/rune", rev = "50d5c6db1ed6c310101a7fda6aa058df33959590" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = true
+
+[profile.dev.package."*"]
+opt-level = 2

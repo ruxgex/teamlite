@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Teamlite
+GenericName=Teams chat
+Comment=Fast native Microsoft Teams chat client
+Exec=teamlite
+Icon=internet-chat
+Terminal=false
+Categories=Network;InstantMessaging;Chat;
+StartupWMClass=teamlite

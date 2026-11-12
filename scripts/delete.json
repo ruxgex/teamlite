@@ -1,0 +1,5 @@
+[
+  {"t": 0.3, "type": "tap", "key": "msg-5/msg-body"},
+  {"t": 0.8, "type": "tap", "key": "action-delete"},
+  {"t": 1.3, "type": "mark", "name": "end"}
+]

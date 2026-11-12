@@ -1,0 +1,5 @@
+[
+  {"t": 0.3, "type": "key", "name": "2", "cmd": true},
+  {"t": 0.9, "type": "tap", "key": "chat-19:x@thread.v2"},
+  {"t": 1.5, "type": "mark", "name": "end"}
+]

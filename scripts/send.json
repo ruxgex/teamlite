@@ -1,0 +1,8 @@
+[
+  {"t": 0.3, "type": "tap", "key": "chat-19:me_bob@unq.gbl.spaces"},
+  {"t": 0.8, "type": "type", "text": "Hello from Teamlite"},
+  {"t": 1.6, "type": "key", "name": "Enter"},
+  {"t": 2.2, "type": "key", "name": "k", "cmd": true},
+  {"t": 2.4, "type": "type", "text": "rel"},
+  {"t": 3.0, "type": "mark", "name": "end"}
+]
