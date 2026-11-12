@@ -27,7 +27,18 @@ pub struct Rendered {
     pub has_image: bool,
     /// Image sources in the message (inline pictures, GIFs), in order.
     pub images: Vec<String>,
-    pub quoted: Option<String>,
+    pub quoted: Option<Quote>,
+}
+
+/// The message a reply quotes. Teams puts the author in `<strong itemprop="mri" itemid="8:orgid:…">`,
+/// but some clients leave its text as the literal placeholder "Display Name", so the MRI and the
+/// quoted message id are kept for the UI to resolve the real name.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Quote {
+    pub author: String,
+    pub author_mri: Option<String>,
+    pub message_id: Option<String>,
+    pub text: String,
 }
 
 impl Rendered {
@@ -69,7 +80,10 @@ pub fn render(html: &str) -> Rendered {
     let mut quoted = None;
     let mut skip_depth = 0u32; // inside <style>/<script>/quoted reply blockquote
     let mut quote_buf = String::new();
+    let mut quote = Quote::default();
     let mut in_quote = 0u32;
+    // Inside the quote: 1 = author <strong>, 2 = timestamp <span> (dropped).
+    let mut quote_part: Option<(u8, u32)> = None;
     let mut list_stack: Vec<Option<u32>> = Vec::new();
     let mut spans: Vec<bool> = Vec::new();
 
@@ -124,18 +138,43 @@ pub fn render(html: &str) -> Rendered {
                     if in_quote > 0 {
                         in_quote -= 1;
                         if in_quote == 0 {
-                            let q = quote_buf.split_whitespace().collect::<Vec<_>>().join(" ");
+                            let mut q = std::mem::take(&mut quote);
+                            q.author = q.author.split_whitespace().collect::<Vec<_>>().join(" ");
+                            q.text = quote_buf.split_whitespace().collect::<Vec<_>>().join(" ");
                             quoted = Some(q);
                             quote_buf.clear();
+                            quote_part = None;
                         }
                     }
-                } else if in_quote > 0 || attr(tag, "itemtype").is_some_and(|t| t.contains("Reply")) {
+                } else if in_quote > 0 {
                     in_quote += 1;
+                } else if attr(tag, "itemtype").is_some_and(|t| t.contains("Reply")) {
+                    in_quote = 1;
+                    quote = Quote { message_id: attr(tag, "itemid").filter(|i| !i.is_empty()), ..Quote::default() };
                 }
                 continue;
             }
             if in_quote > 0 {
-                if matches!(name.as_str(), "p" | "div" | "br") {
+                let prop = if closing { None } else { attr(tag, "itemprop") };
+                match (&mut quote_part, closing) {
+                    (Some((_, depth)), false) if !tag.ends_with('/') && !matches!(name.as_str(), "br" | "img") => *depth += 1,
+                    (Some((_, depth)), true) => {
+                        *depth -= 1;
+                        if *depth == 0 {
+                            quote_part = None;
+                        }
+                    }
+                    (None, false)
+                        if prop.as_deref() == Some("mri")
+                            || (name == "strong" && quote.author.is_empty() && quote_buf.trim().is_empty()) =>
+                    {
+                        quote.author_mri = attr(tag, "itemid").filter(|i| !i.is_empty());
+                        quote_part = Some((1, 1));
+                    }
+                    (None, false) if prop.as_deref() == Some("time") => quote_part = Some((2, 1)),
+                    _ => {}
+                }
+                if quote_part.is_none() && matches!(name.as_str(), "p" | "div" | "br") {
                     quote_buf.push(' ');
                 }
                 continue;
@@ -237,7 +276,11 @@ pub fn render(html: &str) -> Rendered {
                 }
             }
             if in_quote > 0 {
-                quote_buf.push_str(&text);
+                match quote_part {
+                    Some((1, _)) => quote.author.push_str(&text),
+                    Some(_) => {}
+                    None => quote_buf.push_str(&text),
+                }
             } else {
                 push(&mut runs, &st, &text);
             }
@@ -313,7 +356,19 @@ mod tests {
     fn reply_quote_is_separated() {
         let r = render(r#"<blockquote itemscope itemtype="http://schema.skype.com/Reply"><strong>Bob</strong><p>old</p></blockquote><p>new</p>"#);
         assert_eq!(r.plain(), "new");
-        assert_eq!(r.quoted.as_deref(), Some("Bob old"));
+        let q = r.quoted.unwrap();
+        assert_eq!((q.author.as_str(), q.text.as_str()), ("Bob", "old"));
+    }
+
+    #[test]
+    fn reply_quote_keeps_author_mri_and_drops_time() {
+        let r = render(r#"<blockquote itemscope="" itemtype="http://schema.skype.com/Reply" itemid="1762979000000"><strong itemprop="mri" itemid="8:orgid:abc">Display Name</strong><span itemprop="time" itemid="1762979000000"></span><p itemprop="preview">Non vanno le chiamate</p></blockquote><p>Questo</p>"#);
+        assert_eq!(r.plain(), "Questo");
+        let q = r.quoted.unwrap();
+        assert_eq!(q.author, "Display Name");
+        assert_eq!(q.author_mri.as_deref(), Some("8:orgid:abc"));
+        assert_eq!(q.message_id.as_deref(), Some("1762979000000"));
+        assert_eq!(q.text, "Non vanno le chiamate");
     }
 
     #[test]

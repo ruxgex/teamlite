@@ -402,6 +402,8 @@ impl App {
             self.composer.clear();
             self.composer.focused = true;
             tx.scroll_to_bottom("messages");
+            // Fast, flat motion for the switch (the new chat fades in; no long glide).
+            tx.motion_curve(rune::Curve::tween(0.16, rune::Easing::ENTER));
         }
     }
 
