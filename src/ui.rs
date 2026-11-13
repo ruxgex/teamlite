@@ -976,13 +976,13 @@ fn message(s: &App, t: &TenantState, key: &str, m: &Shown, grouped: bool, channe
             .child(text("This message has been deleted.").font(ts(13.5, 400.0).italic()).color(k.c.text_faint));
     } else {
         if let Some(q) = &m.rendered.quoted {
-            let mut quote = col().gap(2.0);
+            let mut quote = col().gap(2.0).min_w(0.0).shrink();
             if let Some(author) = quote_author(t, key, q) {
-                quote = quote.child(text(author).font(ts(12.0, 600.0)).color(k.c.text_base).max_lines(1));
+                quote = quote.child(text(author).font(ts(12.0, 600.0)).color(k.c.text_base).truncate());
             }
             bubble = bubble.child(
-                el().pl(10.0).pr(8.0).py(6.0).radius(6.0).fill(Color::BLACK.alpha(0.18)).border_sides([0.0, 0.0, 0.0, 3.0], accent().alpha(0.7))
-                    .child(quote.child(text(q.text.clone()).font(ts(12.5, 400.0)).color(k.c.text_muted).max_lines(3).wrap())),
+                el().min_w(0.0).shrink().pl(10.0).pr(8.0).py(6.0).radius(6.0).fill(Color::BLACK.alpha(0.18)).border_sides([0.0, 0.0, 0.0, 3.0], accent().alpha(0.7))
+                    .child(quote.child(text(q.text.clone()).font(ts(12.5, 400.0)).color(k.c.text_muted).max_lines(2).min_w(0.0).shrink())),
             );
         }
         if !m.rendered.plain().trim().is_empty() || (m.rendered.images.is_empty() && m.msg.files.is_empty()) {
